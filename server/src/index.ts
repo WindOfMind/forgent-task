@@ -10,7 +10,6 @@ import { AnthropicClient } from "./anthropic-client.ts";
 
 config({ path: ".env.local" });
 
-// Initialize the database
 await database.init();
 const anthropicClient = new AnthropicClient(
   process.env["ANTHROPIC_API_KEY"] || "",
@@ -22,8 +21,6 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// Winston logging middleware
 app.use((req: Request, _res: Response, next: NextFunction) => {
   logger.info(`${req.method} ${req.path}`, {
     method: req.method,
@@ -50,7 +47,6 @@ const fileFilter = async (
 
 const upload = multer({ storage: storage, fileFilter: fileFilter });
 
-// upload file
 app.post("/api/tender/file", upload.single("file"), async (req, res) => {
   if (!req.file) {
     logger.warn("No file uploaded or file is not a PDF");
@@ -58,7 +54,6 @@ app.post("/api/tender/file", upload.single("file"), async (req, res) => {
   }
 
   try {
-    // Save file to Anthropic
     const { fileId } = await anthropicClient.uploadFile(req.file.buffer);
     const dbFileId = await database.addFile(
       fileId,
@@ -77,7 +72,6 @@ app.post("/api/tender/file", upload.single("file"), async (req, res) => {
   }
 });
 
-// add question
 app.post("/api/tender/question", async (req: Request, res: Response) => {
   const { question } = req.body;
 
@@ -96,7 +90,6 @@ app.post("/api/tender/question", async (req: Request, res: Response) => {
     return;
   }
 
-  // Save question to database
   try {
     const id = await database.addQuestion(question);
     res.status(200).json({ success: true, id });
@@ -106,7 +99,6 @@ app.post("/api/tender/question", async (req: Request, res: Response) => {
   }
 });
 
-// Get all questions
 app.get("/api/tender/questions", (_req: Request, res: Response) => {
   try {
     const questions = database.getAllQuestions();
@@ -117,7 +109,6 @@ app.get("/api/tender/questions", (_req: Request, res: Response) => {
   }
 });
 
-// Delete a question
 app.delete("/api/tender/question/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -142,7 +133,6 @@ app.delete("/api/tender/question/:id", async (req: Request, res: Response) => {
   }
 });
 
-// Get all files
 app.get("/api/tender/files", (_req: Request, res: Response) => {
   try {
     const files = database.getAllFiles();
@@ -155,7 +145,6 @@ app.get("/api/tender/files", (_req: Request, res: Response) => {
 
 app.post("/api/tender/submit", async (_req: Request, res: Response) => {
   try {
-    // Get all files
     const files = database.getAllFiles();
 
     if (files.length === 0) {
@@ -165,15 +154,12 @@ app.post("/api/tender/submit", async (_req: Request, res: Response) => {
     }
 
     const questions = database.getAllQuestions();
-
-    // Process each question against all files
     for (const question of questions) {
       if (question.answer) {
         continue;
       }
 
       try {
-        // Get answer for the question using all files at once
         const fileIds = files.map((f) => f.anthropicFileId);
         const answer = await anthropicClient.askQuestionAboutFile(
           fileIds,

@@ -21,6 +21,8 @@ type DbSchema = {
   }>;
 };
 
+const MAX_FILES_TO_KEEP_DEFAULT = 3;
+
 class Database {
   private db: Low<DbSchema>;
 
@@ -67,7 +69,6 @@ class Database {
 
   async deleteQuestion(id: string): Promise<boolean> {
     try {
-      // Check if the question exists
       const questionIndex = this.db.data.questions.findIndex(
         (question) => question.id === id
       );
@@ -77,7 +78,6 @@ class Database {
         return false;
       }
 
-      // Remove the question from the array
       this.db.data.questions.splice(questionIndex, 1);
 
       await this.db.write();
@@ -118,9 +118,7 @@ class Database {
         fileSize,
         createdAt: new Date().toISOString(),
       });
-
-      // Enforce retention policy - keep only the 3 most recent files
-      await this.enforceFileRetentionPolicy();
+      await this.enforceFileRetentionPolicy(MAX_FILES_TO_KEEP_DEFAULT);
 
       await this.db.write();
       logger.info("File added to database", { id, anthropicFileId });
@@ -132,19 +130,14 @@ class Database {
     }
   }
 
-  async enforceFileRetentionPolicy(): Promise<void> {
+  async enforceFileRetentionPolicy(count: number): Promise<void> {
     try {
-      // Sort files by creation date (newest first)
       const sortedFiles = [...this.db.data.files].sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
-      // If we have more than 3 files, remove the oldest ones
-      if (sortedFiles.length > 3) {
-        // const filesToRemove = sortedFiles.slice(3);
-
-        // Update database to keep only the 3 newest files
+      if (sortedFiles.length > count) {
         this.db.data.files = sortedFiles.slice(0, 3);
       }
     } catch (error) {
@@ -183,7 +176,6 @@ class Database {
         return false;
       }
 
-      // Add the answer to the question
       question.answer = {
         answer,
         createdAt: new Date().toISOString(),
