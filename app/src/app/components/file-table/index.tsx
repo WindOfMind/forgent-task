@@ -15,13 +15,10 @@ export default function FileTable({ apiUrl }: FileTableProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-
-  // File state
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Function to fetch uploaded files
   const fetchUploadedFiles = useCallback(async () => {
     setIsLoading(true);
     setLoadError(null);
@@ -44,7 +41,6 @@ export default function FileTable({ apiUrl }: FileTableProps) {
     }
   }, [apiUrl]);
 
-  // Fetch files when component mounts
   useEffect(() => {
     fetchUploadedFiles();
   }, [fetchUploadedFiles]);
@@ -79,9 +75,9 @@ export default function FileTable({ apiUrl }: FileTableProps) {
       if (!res.ok) {
         throw new Error("Upload failed");
       }
+
       setUploadSuccess(true);
       setSelectedFile(null);
-      // Notify parent component to refresh the file list
       fetchUploadedFiles();
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -123,7 +119,6 @@ export default function FileTable({ apiUrl }: FileTableProps) {
         )}
       </div>
 
-      {/* File list section */}
       {loadError && <div className="text-red-600 mb-4">{loadError}</div>}
       {isLoading ? (
         <div className="text-gray-600">Loading files...</div>

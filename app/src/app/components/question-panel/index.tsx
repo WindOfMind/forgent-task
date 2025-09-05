@@ -81,7 +81,7 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
 
       setAddSuccess(true);
       setNewQuestion("");
-      fetchQuestions(); // Refresh the questions list
+      fetchQuestions();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -109,7 +109,7 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
       }
 
       setDeleteSuccess(true);
-      fetchQuestions(); // Refresh the questions list
+      fetchQuestions();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -137,7 +137,6 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
       }
 
       setSubmitSuccess(true);
-      // Refresh questions after successful submission
       fetchQuestions();
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -150,7 +149,6 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
     }
   };
 
-  // Use the refreshTrigger prop to trigger refreshes
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
