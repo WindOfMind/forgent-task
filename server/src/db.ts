@@ -7,7 +7,6 @@ type DbSchema = {
     id: string;
     text: string;
     createdAt: string;
-    status: "pending" | "answered";
   }>;
   files: Array<{
     id: string;
@@ -15,6 +14,12 @@ type DbSchema = {
     originalName: string;
     createdAt: string;
     fileSize: number;
+    answers?: Array<{
+      questionId: string;
+      questionText: string;
+      answer: string;
+      createdAt: string;
+    }>;
   }>;
 };
 
@@ -46,7 +51,6 @@ class Database {
         id,
         text: question,
         createdAt: new Date().toISOString(),
-        status: "pending",
       });
 
       await this.db.write();
@@ -149,6 +153,47 @@ class Database {
 
   getFileById(id: string) {
     return this.db.data.files.find((file) => file.id === id);
+  }
+
+  async addAnswerToFile(
+    fileId: string,
+    questionId: string,
+    questionText: string,
+    answer: string
+  ): Promise<boolean> {
+    try {
+      const file = this.getFileById(fileId);
+
+      if (!file) {
+        logger.warn("File not found for adding answer", { fileId });
+        return false;
+      }
+
+      // Initialize answers array if it doesn't exist
+      if (!file.answers) {
+        file.answers = [];
+      }
+
+      // Add the answer to the file
+      file.answers.push({
+        questionId,
+        questionText,
+        answer,
+        createdAt: new Date().toISOString(),
+      });
+
+      await this.db.write();
+      logger.info("Answer added to file", { fileId, questionId });
+
+      return true;
+    } catch (error) {
+      logger.error("Failed to add answer to file", {
+        error,
+        fileId,
+        questionId,
+      });
+      throw error;
+    }
   }
 }
 

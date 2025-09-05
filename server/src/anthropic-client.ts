@@ -1,6 +1,5 @@
 import Anthropic, { toFile } from "@anthropic-ai/sdk";
 import { logger } from "./logger.ts";
-import fs from "fs";
 
 // Define file upload response
 interface FileUploadResponse {
@@ -21,8 +20,8 @@ export class AnthropicClient {
       },
     });
 
-    this.defaultModel = "claude-3-opus-20240229";
-    this.maxTokens = maxTokens ?? 1024;
+    this.defaultModel = "claude-sonnet-4-20250514";
+    this.maxTokens = maxTokens ?? 1024 * 1024 * 1024;
 
     logger.info("Anthropic client initialized", {
       model: this.defaultModel,
@@ -51,6 +50,71 @@ export class AnthropicClient {
       };
     } catch (error) {
       logger.error("Error uploading file to Anthropic", { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Ask a question about a file using Anthropic's Files API
+   * @param fileId The Anthropic file ID
+   * @param question The question to ask about the file
+   * @returns The answer to the question as a string
+   */
+  async askQuestionAboutFile(
+    fileId: string,
+    question: string
+  ): Promise<string> {
+    try {
+      logger.info("Asking question about file", { fileId, question });
+
+      // Note: API schema validation error in the TypeScript SDK
+      const response = await this.client.messages.create({
+        model: this.defaultModel,
+        max_tokens: this.maxTokens,
+        system: `You are a helpful assistant that answers questions based on document content accurately and concisely. 
+          The document is about public tenders. Please provide concise answers. 
+          If it is a conditional question, return YES/NO. 
+          For invalid questions, return the answer Invalid question.`,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Based on the document provided, please answer the following question: ${question}`,
+              },
+              {
+                type: "document",
+                source: {
+                  // @ts-ignore
+                  type: "file",
+                  file_id: fileId,
+                },
+              },
+            ],
+          },
+        ],
+      });
+
+      // Extract the text content from the response
+      const answer = response.content
+        .filter((block: any) => block.type === "text" && block.text)
+        .map((block: any) => block.text)
+        .join("\n");
+
+      logger.info("Received answer from Anthropic", {
+        fileId,
+        questionLength: question.length,
+        answerLength: answer.length,
+      });
+
+      return answer;
+    } catch (error) {
+      logger.error("Error asking question about file", {
+        error,
+        fileId,
+        question,
+      });
       throw error;
     }
   }

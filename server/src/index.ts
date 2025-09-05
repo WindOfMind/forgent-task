@@ -128,11 +128,87 @@ app.get("/api/tender/files", (_req: Request, res: Response) => {
   }
 });
 
+app.post("/api/tender/submit", async (_req: Request, res: Response) => {
+  try {
+    // Get all files
+    const files = database.getAllFiles();
+
+    if (files.length === 0) {
+      return res.status(404).json({
+        error: "No files found to process the question against.",
+      });
+    }
+    const questions = database.getAllQuestions();
+
+    for (const file of files) {
+      try {
+        for (const question of questions) {
+          if (file.answers?.some((a) => a.questionId === question.id)) {
+            continue;
+          }
+
+          const answer = await anthropicClient.askQuestionAboutFile(
+            file.anthropicFileId,
+            question.text
+          );
+
+          await database.addAnswerToFile(
+            file.id,
+            question.id,
+            question.text,
+            answer
+          );
+        }
+      } catch (fileError) {
+        logger.error("Error processing question for file", {
+          fileId: file.id,
+          error: fileError,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+    });
+  } catch (error) {
+    logger.error("Failed to process question submission", { error });
+    return res
+      .status(500)
+      .json({ error: "Failed to process question submission" });
+  }
+});
+
 app.listen(port, () => {
   logger.info(`🚀 Server is running at http://localhost:${port}`, {
     port,
     environment: process.env["NODE_ENV"] || "development",
   });
+});
+
+// Get answers for a specific file
+app.get("/api/tender/file/:fileId/answers", (req: Request, res: Response) => {
+  try {
+    const { fileId } = req.params;
+
+    if (!fileId) {
+      return res.status(400).json({ error: "File ID is required" });
+    }
+
+    const file = database.getFileById(fileId);
+
+    if (!file) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    return res.status(200).json({
+      fileId,
+      fileName: file.originalName,
+      answers: file.answers || [],
+    });
+  } catch (error) {
+    logger.error("Failed to get file answers", { error });
+    return res.status(500).json({ error: "Failed to get file answers" });
+  }
 });
 
 export { app };

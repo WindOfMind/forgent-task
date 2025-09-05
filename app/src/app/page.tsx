@@ -22,9 +22,38 @@ export default function Home() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(false);
+
+    try {
+      const response = await fetch(`${API_URL}/tender/submit`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Submission failed");
+      }
+
+      setSubmitSuccess(true);
+
+      // Refresh the file list
+      fetchUploadedFiles();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setSubmitError(err.message);
+      } else {
+        setSubmitError("Unknown error during submission");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,12 +166,19 @@ export default function Home() {
 
       <QuestionPanel apiUrl={API_URL} />
 
-      <button
-        type="submit"
-        className="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 self-start"
-      >
-        Submit
-      </button>
+      <div className="flex flex-col gap-2 items-start">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 self-start disabled:opacity-50"
+        >
+          {isSubmitting ? "Submitting..." : "Submit"}
+        </button>
+        {submitError && <div className="text-red-600 mt-2">{submitError}</div>}
+        {submitSuccess && (
+          <div className="text-green-600 mt-2">Successfully submitted!</div>
+        )}
+      </div>
     </form>
   );
 }
