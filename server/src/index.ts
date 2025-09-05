@@ -1,8 +1,11 @@
+import { config } from "dotenv";
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import type { Request, Response, NextFunction } from "express";
 import { logger } from "./logger.ts";
+
+config({ path: ".env.local" });
 
 const app = express();
 app.use(cors());
@@ -22,7 +25,6 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 
 const port: number = process.env["PORT"] ? parseInt(process.env["PORT"]) : 3001;
 
-// POST /api/question/add endpoint
 app.post("/api/question/add", (req: Request, res: Response) => {
   const { question } = req.body;
 

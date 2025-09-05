@@ -148,3 +148,5 @@ build/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+node_modules/
