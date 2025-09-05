@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 interface UploadedFile {
   id: number;
@@ -7,24 +7,47 @@ interface UploadedFile {
 }
 
 interface FileTableProps {
-  files: UploadedFile[];
-  isLoading: boolean;
-  error: string | null;
   apiUrl: string;
-  onFileUploaded: () => void;
 }
 
-export default function FileTable({
-  files,
-  isLoading,
-  error,
-  apiUrl,
-  onFileUploaded,
-}: FileTableProps) {
+export default function FileTable({ apiUrl }: FileTableProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+
+  // File state
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Function to fetch uploaded files
+  const fetchUploadedFiles = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const response = await fetch(`${apiUrl}/tender/files`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch files");
+      }
+      const data = await response.json();
+
+      setUploadedFiles(data.files ?? []);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setLoadError(err.message);
+      } else {
+        setLoadError("Unknown error loading files");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [apiUrl]);
+
+  // Fetch files when component mounts
+  useEffect(() => {
+    fetchUploadedFiles();
+  }, [fetchUploadedFiles]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -59,7 +82,7 @@ export default function FileTable({
       setUploadSuccess(true);
       setSelectedFile(null);
       // Notify parent component to refresh the file list
-      onFileUploaded();
+      fetchUploadedFiles();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setUploadError(err.message);
@@ -101,10 +124,10 @@ export default function FileTable({
       </div>
 
       {/* File list section */}
-      {error && <div className="text-red-600 mb-4">{error}</div>}
+      {loadError && <div className="text-red-600 mb-4">{loadError}</div>}
       {isLoading ? (
         <div className="text-gray-600">Loading files...</div>
-      ) : files.length === 0 ? (
+      ) : uploadedFiles.length === 0 ? (
         <div className="text-gray-600">No files uploaded yet.</div>
       ) : (
         <div className="border rounded-lg overflow-hidden">
@@ -123,7 +146,7 @@ export default function FileTable({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {files.map((file) => (
+              {uploadedFiles.map((file) => (
                 <tr key={file.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {file.originalName}
