@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import type { Request, Response, NextFunction } from "express";
+import multer from "multer";
+import path from "path";
 import { logger } from "./logger.ts";
 
 config({ path: ".env.local" });
@@ -24,6 +26,43 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 });
 
 const port: number = process.env["PORT"] ? parseInt(process.env["PORT"]) : 3001;
+
+const storage = multer.diskStorage({
+  destination: function (_req, _file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (_req, file, cb) {
+    cb(
+      null,
+      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+    );
+  },
+});
+
+const fileFilter = (
+  _req: Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
+  if (file.mimetype === "application/pdf") {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
+
+const upload = multer({ storage: storage, fileFilter: fileFilter });
+
+app.post("/api/upload", upload.single("file"), (req, res) => {
+  logger.info("Processing /api/upload request");
+
+  if (!req.file) {
+    logger.warn("No file uploaded or file is not a PDF");
+    return res.status(400).send("No file uploaded or file is not a PDF.");
+  }
+
+  res.status(200).send(`File uploaded successfully: ${req.file.path}`);
+});
 
 app.post("/api/question/add", (req: Request, res: Response) => {
   const { question } = req.body;
