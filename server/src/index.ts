@@ -6,9 +6,12 @@ import type { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import path from "path";
 import { logger } from "./logger.ts";
+import { database } from "./db.ts";
 
 config({ path: ".env.local" });
 
+// Initialize the database
+await database.init();
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -59,10 +62,10 @@ app.post("/api/tender/file", upload.single("file"), (req, res) => {
     return res.status(400).send("No file uploaded or file is not a PDF.");
   }
 
-  res.status(200).send(`File uploaded successfully: ${req.file.path}`);
+  return res.status(200).send(`File uploaded successfully: ${req.file.path}`);
 });
 
-app.post("/api/tender/question/add", (req: Request, res: Response) => {
+app.post("/api/tender/question/add", async (req: Request, res: Response) => {
   const { question } = req.body;
 
   logger.info("Processing /api/tender/question/add request", { question });
@@ -80,7 +83,25 @@ app.post("/api/tender/question/add", (req: Request, res: Response) => {
     return;
   }
 
-  res.status(200);
+  // Save question to database
+  try {
+    const id = await database.addQuestion(question);
+    res.status(200).json({ success: true, id });
+  } catch (error) {
+    logger.error("Failed to save question", { error });
+    res.status(500).json({ error: "Failed to save question" });
+  }
+});
+
+// Get all questions
+app.get("/api/tender/questions", (_req: Request, res: Response) => {
+  try {
+    const questions = database.getAllQuestions();
+    res.status(200).json({ questions });
+  } catch (error) {
+    logger.error("Failed to get questions", { error });
+    res.status(500).json({ error: "Failed to get questions" });
+  }
 });
 
 app.listen(port, () => {
