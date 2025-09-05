@@ -4,14 +4,20 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import type { Request, Response, NextFunction } from "express";
 import multer from "multer";
-import path from "path";
 import { logger } from "./logger.ts";
 import { database } from "./db.ts";
+import { AnthropicClient } from "./anthropic-client.ts";
 
 config({ path: ".env.local" });
 
 // Initialize the database
 await database.init();
+const anthropicClient = new AnthropicClient(
+  process.env["ANTHROPIC_API_KEY"] || "",
+  process.env["ANTHROPIC_MAX_TOKENS"]
+    ? parseInt(process.env["ANTHROPIC_MAX_TOKENS"])
+    : undefined
+);
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -28,17 +34,7 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 
 const port: number = process.env["PORT"] ? parseInt(process.env["PORT"]) : 3001;
 
-const storage = multer.diskStorage({
-  destination: function (_req, _file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (_req, file, cb) {
-    cb(
-      null,
-      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
-    );
-  },
-});
+const storage = multer.memoryStorage();
 
 const fileFilter = async (
   _req: Request,
@@ -62,12 +58,17 @@ app.post("/api/tender/file", upload.single("file"), async (req, res) => {
   }
 
   try {
-    // Save file info to database
-    const fileId = await database.addFile(req.file.path, req.file.originalname);
+    // Save file to Anthropic
+    const { fileId } = await anthropicClient.uploadFile(req.file.buffer);
+    const dbFileId = await database.addFile(
+      fileId,
+      req.file.originalname,
+      req.file.size
+    );
     return res.status(200).json({
       success: true,
       message: `File uploaded successfully`,
-      fileId,
+      fileId: dbFileId,
       path: req.file.path,
     });
   } catch (error) {

@@ -1,7 +1,6 @@
 import { JSONFile } from "lowdb/node";
 import { Low } from "lowdb";
 import { logger } from "./logger.ts";
-import fs from "fs/promises";
 
 type DbSchema = {
   questions: Array<{
@@ -12,9 +11,10 @@ type DbSchema = {
   }>;
   files: Array<{
     id: string;
-    path: string;
+    anthropicFileId: string;
     originalName: string;
     createdAt: string;
+    fileSize: number;
   }>;
 };
 
@@ -63,7 +63,11 @@ class Database {
     return this.db.data.questions;
   }
 
-  async addFile(filePath: string, originalName: string): Promise<string> {
+  async addFile(
+    anthropicFileId: string,
+    originalName: string,
+    fileSize: number
+  ): Promise<string> {
     const existingFile = this.db.data.files.find(
       (file) => file.originalName === originalName
     );
@@ -71,7 +75,7 @@ class Database {
     if (existingFile) {
       logger.info("File with the same name already exists", {
         originalName,
-        existingPath: existingFile.path,
+        existingFileId: existingFile.anthropicFileId,
       });
 
       return existingFile.id;
@@ -82,8 +86,9 @@ class Database {
 
       this.db.data.files.push({
         id,
-        path: filePath,
+        anthropicFileId,
         originalName,
+        fileSize,
         createdAt: new Date().toISOString(),
       });
 
@@ -91,7 +96,7 @@ class Database {
       await this.enforceFileRetentionPolicy();
 
       await this.db.write();
-      logger.info("File added to database", { id, path: filePath });
+      logger.info("File added to database", { id, anthropicFileId });
 
       return id;
     } catch (error) {
@@ -110,24 +115,21 @@ class Database {
 
       // If we have more than 3 files, remove the oldest ones
       if (sortedFiles.length > 3) {
-        const filesToRemove = sortedFiles.slice(3);
+        // const filesToRemove = sortedFiles.slice(3);
 
         // Update database to keep only the 3 newest files
         this.db.data.files = sortedFiles.slice(0, 3);
 
-        // Delete the actual files from the filesystem
-        for (const file of filesToRemove) {
-          try {
-            await fs.unlink(file.path);
-            logger.info("Deleted old file", { path: file.path });
-          } catch (error) {
-            logger.warn("Failed to delete old file", {
-              path: file.path,
-              error,
-            });
-            // Continue with next file even if this one fails
-          }
-        }
+        // Log the files that will be removed
+        // for (const file of filesToRemove) {
+        //   logger.info("Removed old file from database", {
+        //     id: file.id,
+        //     anthropicFileId: file.anthropicFileId,
+        //     originalName: file.originalName,
+        //   });
+        // Note: We should also delete the files from Anthropic's servers
+        // This would be done through the AnthropicClient
+        // }
       }
     } catch (error) {
       logger.error("Error enforcing file retention policy", { error });
@@ -143,6 +145,10 @@ class Database {
     return this.db.data.files.find(
       (file) => file.originalName === originalName
     );
+  }
+
+  getFileById(id: string) {
+    return this.db.data.files.find((file) => file.id === id);
   }
 }
 
