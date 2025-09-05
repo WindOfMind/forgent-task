@@ -68,6 +68,19 @@ class Database {
   }
 
   async addFile(filePath: string, originalName: string): Promise<string> {
+    const existingFile = this.db.data.files.find(
+      (file) => file.originalName === originalName
+    );
+
+    if (existingFile) {
+      logger.info("File with the same name already exists", {
+        originalName,
+        existingPath: existingFile.path,
+      });
+
+      return existingFile.id;
+    }
+
     try {
       const id = Date.now().toString();
 

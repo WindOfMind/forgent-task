@@ -22,8 +22,6 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   logger.info(`${req.method} ${req.path}`, {
     method: req.method,
     url: req.path,
-    ip: req.ip,
-    userAgent: req.get("User-Agent"),
   });
   next();
 });
@@ -50,16 +48,6 @@ const fileFilter = async (
   if (file.mimetype === "application/pdf") {
     cb(null, true);
   } else {
-    cb(null, false);
-  }
-
-  const existingFile = database.findFileByOriginalName(file.filename);
-  if (existingFile) {
-    logger.info("File with the same name already exists", {
-      originalName: file.originalname,
-      existingPath: existingFile.path,
-    });
-
     cb(null, false);
   }
 };
