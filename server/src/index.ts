@@ -117,6 +117,31 @@ app.get("/api/tender/questions", (_req: Request, res: Response) => {
   }
 });
 
+// Delete a question
+app.delete("/api/tender/question/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "Question ID is required" });
+    }
+
+    const success = await database.deleteQuestion(id);
+
+    if (!success) {
+      return res.status(404).json({ error: "Question not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Question deleted successfully",
+    });
+  } catch (error) {
+    logger.error("Failed to delete question", { error });
+    return res.status(500).json({ error: "Failed to delete question" });
+  }
+});
+
 // Get all files
 app.get("/api/tender/files", (_req: Request, res: Response) => {
   try {

@@ -67,6 +67,40 @@ class Database {
     return this.db.data.questions;
   }
 
+  async deleteQuestion(id: string): Promise<boolean> {
+    try {
+      // Check if the question exists
+      const questionIndex = this.db.data.questions.findIndex(
+        (question) => question.id === id
+      );
+
+      if (questionIndex === -1) {
+        logger.warn("Question not found for deletion", { id });
+        return false;
+      }
+
+      // Remove the question from the array
+      this.db.data.questions.splice(questionIndex, 1);
+
+      // Also remove any answers to this question from all files
+      for (const file of this.db.data.files) {
+        if (file.answers && file.answers.length > 0) {
+          file.answers = file.answers.filter(
+            (answer) => answer.questionId !== id
+          );
+        }
+      }
+
+      await this.db.write();
+      logger.info("Question deleted from database", { id });
+
+      return true;
+    } catch (error) {
+      logger.error("Failed to delete question from database", { error, id });
+      throw error;
+    }
+  }
+
   async addFile(
     anthropicFileId: string,
     originalName: string,
