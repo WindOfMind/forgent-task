@@ -1,7 +1,6 @@
 import Anthropic, { toFile } from "@anthropic-ai/sdk";
 import { logger } from "./logger.ts";
 
-// Define file upload response
 interface FileUploadResponse {
   fileId: string;
 }
@@ -14,7 +13,6 @@ export class AnthropicClient {
   constructor(apiKey: string, maxTokens?: number) {
     this.client = new Anthropic({
       apiKey,
-      // Add beta feature header for Files API
       defaultHeaders: {
         "anthropic-beta": "files-api-2025-04-14",
       },
