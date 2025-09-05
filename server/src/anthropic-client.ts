@@ -81,7 +81,7 @@ export class AnthropicClient {
             content: [
               {
                 type: "text",
-                text: `Based on the document provided, please answer the following question: ${question}`,
+                text: `Based on the document provided, please answer the following question: ${question}. Be accurate and concise.`,
               },
               {
                 type: "document",
