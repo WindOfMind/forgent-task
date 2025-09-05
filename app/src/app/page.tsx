@@ -1,11 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
+import FileTable from "./components/file-table";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
-
-interface Question {
-  question: string;
-}
 
 interface UploadedFile {
   id: number;
@@ -14,7 +11,7 @@ interface UploadedFile {
 }
 
 export default function Home() {
-  const [questions, setQuestions] = useState<Question[]>([]);
+  // Remove unused state
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -132,42 +129,11 @@ export default function Home() {
       </div>
 
       {/* Display uploaded files */}
-      <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Uploaded Files</h2>
-        {loadError && <div className="text-red-600 mb-4">{loadError}</div>}
-        {isLoading ? (
-          <div className="text-gray-600">Loading files...</div>
-        ) : uploadedFiles.length === 0 ? (
-          <div className="text-gray-600">No files uploaded yet.</div>
-        ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    File Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {uploadedFiles?.map((file) => (
-                  <tr key={file.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {file.originalName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(file.createdAt).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <FileTable
+        files={uploadedFiles}
+        isLoading={isLoading}
+        error={loadError}
+      />
 
       <button
         type="submit"
