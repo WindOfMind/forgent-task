@@ -235,7 +235,11 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
                       <div className="text-sm">
                         <div className="mt-1 text-gray-600">
                           {typeof q.answer.answer === "string"
-                            ? q.answer.answer
+                            ? q.answer.answer.split("\n").map((line, idx) => (
+                                <p key={idx} className="mb-1">
+                                  {line}
+                                </p>
+                              ))
                             : null}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
