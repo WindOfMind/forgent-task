@@ -73,7 +73,7 @@ export class AnthropicClient {
         max_tokens: this.maxTokens,
         system: `You are a helpful assistant that answers questions based on document content accurately and concisely. 
           The document is about public tenders. Please provide concise answers. 
-          If it is a conditional question, return YES/NO. 
+          If it is a conditional question, return just YES/NO. 
           For invalid questions, return the answer Invalid question.`,
         messages: [
           {

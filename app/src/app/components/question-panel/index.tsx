@@ -15,8 +15,10 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
   const [newQuestion, setNewQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [addSuccess, setAddSuccess] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   const fetchQuestions = async () => {
     setIsLoading(true);
@@ -45,6 +47,7 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
     setIsAdding(true);
     setError(null);
     setAddSuccess(false);
+    setDeleteSuccess(false);
 
     try {
       const response = await fetch(`${apiUrl}/tender/question`, {
@@ -70,6 +73,34 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
       }
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const deleteQuestion = async (id: number) => {
+    setIsDeleting(id);
+    setError(null);
+    setDeleteSuccess(false);
+    setAddSuccess(false);
+
+    try {
+      const response = await fetch(`${apiUrl}/tender/question/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete question");
+      }
+
+      setDeleteSuccess(true);
+      fetchQuestions(); // Refresh the questions list
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unknown error deleting question");
+      }
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -107,6 +138,9 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
           {addSuccess && (
             <div className="text-green-600">Question added successfully!</div>
           )}
+          {deleteSuccess && (
+            <div className="text-green-600">Question deleted successfully!</div>
+          )}
         </div>
       </div>
 
@@ -120,10 +154,23 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
           <ul className="border rounded divide-y">
             {questions.map((q) => (
               <li key={q.id} className="p-4">
-                <p className="mb-1">{q.text}</p>
-                <span className="text-sm text-gray-500">
-                  Asked on {new Date(q.createdAt).toLocaleString()}
-                </span>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="mb-1">{q.text}</p>
+                    <span className="text-sm text-gray-500">
+                      Asked on {new Date(q.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => deleteQuestion(q.id)}
+                    disabled={isDeleting === q.id}
+                    className="ml-4 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50 flex-shrink-0"
+                    title="Delete question"
+                  >
+                    {isDeleting === q.id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
