@@ -111,7 +111,7 @@ export class AnthropicClient {
 
       return answer;
     } catch (error) {
-      logger.error("Error asking question about file", {
+      logger.error("Error asking question", {
         error,
         fileIds,
         question,

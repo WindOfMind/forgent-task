@@ -4,7 +4,6 @@ interface UploadedFile {
   id: number;
   originalName: string;
   createdAt: string;
-  answers?: Array<{ questionText: string; answer: string }>;
 }
 
 interface FileTableProps {
@@ -26,64 +25,6 @@ export default function FileTable({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [expandedFile, setExpandedFile] = useState<number | null>(null);
-
-  // Helper function to render answer content
-  const renderAnswer = (answer: string) => {
-    // Check if answer starts with YES or NO (case insensitive)
-    if (/^yes\b/i.test(answer)) {
-      return (
-        <div className="flex items-center">
-          <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 text-white"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
-          <span>Yes</span>
-        </div>
-      );
-    } else if (/^no\b/i.test(answer)) {
-      return (
-        <div className="flex items-center">
-          <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 text-white"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
-          <span>No</span>
-        </div>
-      );
-    }
-
-    // If not YES/NO, just return the answer text
-    return answer;
-  };
-
-  const toggleFileDetails = (fileId: number) => {
-    if (expandedFile === fileId) {
-      setExpandedFile(null);
-    } else {
-      setExpandedFile(fileId);
-    }
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -183,56 +124,24 @@ export default function FileTable({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {files.map((file) => (
-                <React.Fragment key={file.id}>
-                  <tr className={expandedFile === file.id ? "bg-blue-50" : ""}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {file.originalName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(file.createdAt).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {file.answers && file.answers.length > 0 && (
-                        <button
-                          onClick={() => toggleFileDetails(file.id)}
-                          className="text-blue-600 hover:text-blue-800 focus:outline-none"
-                        >
-                          {expandedFile === file.id
-                            ? "Hide Answers"
-                            : "Show Answers"}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                  {expandedFile === file.id &&
-                    file.answers &&
-                    file.answers.length > 0 && (
-                      <tr>
-                        <td colSpan={3} className="px-6 py-4 bg-gray-50">
-                          <div className="pl-4 border-l-2 border-blue-400">
-                            <h4 className="text-sm font-semibold mb-2">
-                              Answers:
-                            </h4>
-                            <ul className="space-y-3">
-                              {file.answers.map((answer, index) => (
-                                <li key={index} className="text-sm">
-                                  <div className="font-medium text-gray-700">
-                                    Q: {answer.questionText}
-                                  </div>
-                                  <div className="mt-1 text-gray-600">
-                                    A:{" "}
-                                    {typeof answer.answer === "string"
-                                      ? renderAnswer(answer.answer)
-                                      : answer.answer}
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                </React.Fragment>
+                <tr key={file.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {file.originalName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(file.createdAt).toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <a
+                      href={`${apiUrl}/tender/file/${file.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 focus:outline-none"
+                    >
+                      Download
+                    </a>
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>

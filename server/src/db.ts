@@ -7,10 +7,10 @@ type DbSchema = {
     id: string;
     text: string;
     createdAt: string;
-    answers?: Array<{
+    answer?: {
       answer: string;
       createdAt: string;
-    }>;
+    };
   }>;
   files: Array<{
     id: string;
@@ -183,16 +183,11 @@ class Database {
         return false;
       }
 
-      // Initialize answers array if it doesn't exist
-      if (!question.answers) {
-        question.answers = [];
-      }
-
       // Add the answer to the question
-      question.answers.push({
+      question.answer = {
         answer,
         createdAt: new Date().toISOString(),
-      });
+      };
 
       await this.db.write();
       logger.info("Answer added to question", { questionId });

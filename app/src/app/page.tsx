@@ -38,9 +38,6 @@ export default function Home() {
       }
 
       setSubmitSuccess(true);
-
-      // Refresh the file list
-      fetchUploadedFiles();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setSubmitError(err.message);
