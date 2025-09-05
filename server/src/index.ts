@@ -77,7 +77,7 @@ app.post("/api/tender/file", upload.single("file"), async (req, res) => {
 });
 
 // add question
-app.post("/api/tender/question/add", async (req: Request, res: Response) => {
+app.post("/api/tender/question", async (req: Request, res: Response) => {
   const { question } = req.body;
 
   logger.info("Processing /api/tender/question/add request", { question });

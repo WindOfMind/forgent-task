@@ -2,9 +2,7 @@ import { JSONFile } from "lowdb/node";
 import { Low } from "lowdb";
 import { logger } from "./logger.ts";
 import fs from "fs/promises";
-import path from "path";
 
-// Define the database schema
 type DbSchema = {
   questions: Array<{
     id: string;
@@ -24,14 +22,12 @@ class Database {
   private db: Low<DbSchema>;
 
   constructor() {
-    // Initialize the database with the JSONFile adapter
     const adapter = new JSONFile<DbSchema>("data/db.json");
     this.db = new Low(adapter, { questions: [], files: [] });
   }
 
   async init(): Promise<void> {
     try {
-      // Read the database or initialize it if it doesn't exist
       await this.db.read();
       this.db.data ||= { questions: [], files: [] };
       await this.db.write();
@@ -84,7 +80,6 @@ class Database {
     try {
       const id = Date.now().toString();
 
-      // Add the new file to the database
       this.db.data.files.push({
         id,
         path: filePath,
@@ -151,5 +146,4 @@ class Database {
   }
 }
 
-// Export a singleton instance
 export const database = new Database();

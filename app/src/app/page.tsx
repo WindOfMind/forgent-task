@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import FileTable from "./components/file-table";
+import QuestionPanel from "./components/question-panel";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -128,12 +129,13 @@ export default function Home() {
         )}
       </div>
 
-      {/* Display uploaded files */}
       <FileTable
         files={uploadedFiles}
         isLoading={isLoading}
         error={loadError}
       />
+
+      <QuestionPanel apiUrl={API_URL} />
 
       <button
         type="submit"
