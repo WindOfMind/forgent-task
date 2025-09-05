@@ -18,7 +18,6 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [addSuccess, setAddSuccess] = useState(false);
 
-  // Fetch all questions
   const fetchQuestions = async () => {
     setIsLoading(true);
     setError(null);
@@ -40,7 +39,6 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
     }
   };
 
-  // Add a new question
   const addQuestion = async () => {
     if (!newQuestion.trim()) return;
 
@@ -75,7 +73,6 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
     }
   };
 
-  // Load questions when component mounts
   useEffect(() => {
     fetchQuestions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,7 +82,6 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
     <div className="mt-8 flex flex-col gap-4">
       <h2 className="text-xl font-bold">Questions</h2>
 
-      {/* Add new question form */}
       <div className="flex flex-col gap-2 p-4 border rounded bg-gray-50">
         <label htmlFor="new-question" className="font-medium">
           Add a new question:
@@ -114,7 +110,6 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
         </div>
       </div>
 
-      {/* Questions list */}
       <div className="mt-4">
         <h3 className="text-lg font-semibold mb-2">All Questions</h3>
         {isLoading ? (
