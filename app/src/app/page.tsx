@@ -21,6 +21,7 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [questionRefreshTrigger, setQuestionRefreshTrigger] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +39,8 @@ export default function Home() {
       }
 
       setSubmitSuccess(true);
+      // Refresh questions after successful submission
+      setQuestionRefreshTrigger((prev) => prev + 1);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setSubmitError(err.message);
@@ -82,7 +85,7 @@ export default function Home() {
       onSubmit={handleSubmit}
       className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded shadow flex flex-col gap-6"
     >
-      <QuestionPanel apiUrl={API_URL} />
+      <QuestionPanel apiUrl={API_URL} refreshTrigger={questionRefreshTrigger} />
 
       <FileTable
         files={uploadedFiles}

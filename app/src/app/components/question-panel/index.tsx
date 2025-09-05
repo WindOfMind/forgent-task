@@ -12,9 +12,13 @@ interface Question {
 
 interface QuestionPanelProps {
   apiUrl: string;
+  refreshTrigger?: number; // A value that changes to trigger a refresh
 }
 
-export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
+export default function QuestionPanel({
+  apiUrl,
+  refreshTrigger,
+}: QuestionPanelProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [newQuestion, setNewQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -166,10 +170,11 @@ export default function QuestionPanel({ apiUrl }: QuestionPanelProps) {
     }
   };
 
+  // Use the refreshTrigger prop to trigger refreshes
   useEffect(() => {
     fetchQuestions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshTrigger]);
 
   return (
     <div className="mt-8 flex flex-col gap-4">
