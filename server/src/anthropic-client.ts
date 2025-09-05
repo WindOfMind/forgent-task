@@ -61,11 +61,11 @@ export class AnthropicClient {
    * @returns The answer to the question as a string
    */
   async askQuestionAboutFile(
-    fileId: string,
+    fileIds: string[],
     question: string
   ): Promise<string> {
     try {
-      logger.info("Asking question about file", { fileId, question });
+      logger.info("Asking question about file", { fileIds, question });
 
       // Note: API schema validation error in the TypeScript SDK
       const response = await this.client.messages.create({
@@ -83,14 +83,15 @@ export class AnthropicClient {
                 type: "text",
                 text: `Based on the document provided, please answer the following question: ${question}. Be accurate and concise.`,
               },
-              {
+              // @ts-ignore
+              ...fileIds.map((fileId) => ({
                 type: "document",
                 source: {
                   // @ts-ignore
                   type: "file",
                   file_id: fileId,
                 },
-              },
+              })),
             ],
           },
         ],
@@ -103,7 +104,7 @@ export class AnthropicClient {
         .join("\n");
 
       logger.info("Received answer from Anthropic", {
-        fileId,
+        fileIds,
         questionLength: question.length,
         answerLength: answer.length,
       });
@@ -112,7 +113,7 @@ export class AnthropicClient {
     } catch (error) {
       logger.error("Error asking question about file", {
         error,
-        fileId,
+        fileIds,
         question,
       });
       throw error;

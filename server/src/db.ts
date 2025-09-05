@@ -7,6 +7,10 @@ type DbSchema = {
     id: string;
     text: string;
     createdAt: string;
+    answers?: Array<{
+      answer: string;
+      createdAt: string;
+    }>;
   }>;
   files: Array<{
     id: string;
@@ -14,12 +18,6 @@ type DbSchema = {
     originalName: string;
     createdAt: string;
     fileSize: number;
-    answers?: Array<{
-      questionId: string;
-      questionText: string;
-      answer: string;
-      createdAt: string;
-    }>;
   }>;
 };
 
@@ -81,15 +79,6 @@ class Database {
 
       // Remove the question from the array
       this.db.data.questions.splice(questionIndex, 1);
-
-      // Also remove any answers to this question from all files
-      for (const file of this.db.data.files) {
-        if (file.answers && file.answers.length > 0) {
-          file.answers = file.answers.filter(
-            (answer) => answer.questionId !== id
-          );
-        }
-      }
 
       await this.db.write();
       logger.info("Question deleted from database", { id });
@@ -157,17 +146,6 @@ class Database {
 
         // Update database to keep only the 3 newest files
         this.db.data.files = sortedFiles.slice(0, 3);
-
-        // Log the files that will be removed
-        // for (const file of filesToRemove) {
-        //   logger.info("Removed old file from database", {
-        //     id: file.id,
-        //     anthropicFileId: file.anthropicFileId,
-        //     originalName: file.originalName,
-        //   });
-        // Note: We should also delete the files from Anthropic's servers
-        // This would be done through the AnthropicClient
-        // }
       }
     } catch (error) {
       logger.error("Error enforcing file retention policy", { error });
@@ -189,41 +167,40 @@ class Database {
     return this.db.data.files.find((file) => file.id === id);
   }
 
-  async addAnswerToFile(
-    fileId: string,
+  getQuestionById(id: string) {
+    return this.db.data.questions.find((question) => question.id === id);
+  }
+
+  async addAnswerToQuestion(
     questionId: string,
-    questionText: string,
     answer: string
   ): Promise<boolean> {
     try {
-      const file = this.getFileById(fileId);
+      const question = this.getQuestionById(questionId);
 
-      if (!file) {
-        logger.warn("File not found for adding answer", { fileId });
+      if (!question) {
+        logger.warn("Question not found for adding answer", { questionId });
         return false;
       }
 
       // Initialize answers array if it doesn't exist
-      if (!file.answers) {
-        file.answers = [];
+      if (!question.answers) {
+        question.answers = [];
       }
 
-      // Add the answer to the file
-      file.answers.push({
-        questionId,
-        questionText,
+      // Add the answer to the question
+      question.answers.push({
         answer,
         createdAt: new Date().toISOString(),
       });
 
       await this.db.write();
-      logger.info("Answer added to file", { fileId, questionId });
+      logger.info("Answer added to question", { questionId });
 
       return true;
     } catch (error) {
-      logger.error("Failed to add answer to file", {
+      logger.error("Failed to add answer to question", {
         error,
-        fileId,
         questionId,
       });
       throw error;

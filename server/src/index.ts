@@ -163,31 +163,24 @@ app.post("/api/tender/submit", async (_req: Request, res: Response) => {
         error: "No files found to process the question against.",
       });
     }
+
     const questions = database.getAllQuestions();
 
-    for (const file of files) {
+    // Process each question against all files
+    for (const question of questions) {
       try {
-        for (const question of questions) {
-          if (file.answers?.some((a) => a.questionId === question.id)) {
-            continue;
-          }
+        // Get answer for the question using all files at once
+        const fileIds = files.map((f) => f.anthropicFileId);
+        const answer = await anthropicClient.askQuestionAboutFile(
+          fileIds,
+          question.text
+        );
 
-          const answer = await anthropicClient.askQuestionAboutFile(
-            file.anthropicFileId,
-            question.text
-          );
-
-          await database.addAnswerToFile(
-            file.id,
-            question.id,
-            question.text,
-            answer
-          );
-        }
-      } catch (fileError) {
-        logger.error("Error processing question for file", {
-          fileId: file.id,
-          error: fileError,
+        await database.addAnswerToQuestion(question.id, answer);
+      } catch (error) {
+        logger.error("Error processing question", {
+          questionId: question.id,
+          error,
         });
       }
     }
@@ -210,30 +203,33 @@ app.listen(port, () => {
   });
 });
 
-// Get answers for a specific file
-app.get("/api/tender/file/:fileId/answers", (req: Request, res: Response) => {
-  try {
-    const { fileId } = req.params;
+// Get answers for a specific question
+app.get(
+  "/api/tender/question/:questionId/answers",
+  (req: Request, res: Response) => {
+    try {
+      const { questionId } = req.params;
 
-    if (!fileId) {
-      return res.status(400).json({ error: "File ID is required" });
+      if (!questionId) {
+        return res.status(400).json({ error: "Question ID is required" });
+      }
+
+      const question = database.getQuestionById(questionId);
+
+      if (!question) {
+        return res.status(404).json({ error: "Question not found" });
+      }
+
+      return res.status(200).json({
+        questionId,
+        questionText: question.text,
+        answers: question.answers || [],
+      });
+    } catch (error) {
+      logger.error("Failed to get question answers", { error });
+      return res.status(500).json({ error: "Failed to get question answers" });
     }
-
-    const file = database.getFileById(fileId);
-
-    if (!file) {
-      return res.status(404).json({ error: "File not found" });
-    }
-
-    return res.status(200).json({
-      fileId,
-      fileName: file.originalName,
-      answers: file.answers || [],
-    });
-  } catch (error) {
-    logger.error("Failed to get file answers", { error });
-    return res.status(500).json({ error: "Failed to get file answers" });
   }
-});
+);
 
 export { app };
