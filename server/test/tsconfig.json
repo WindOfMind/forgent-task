@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2020",
+    "types": ["jest", "node"],
+    "verbatimModuleSyntax": false,
+    "moduleDetection": "auto"
+  },
+  "include": ["./**/*"],
+  "exclude": []
+}
