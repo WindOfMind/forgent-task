@@ -53,9 +53,7 @@ const fileFilter = (
 
 const upload = multer({ storage: storage, fileFilter: fileFilter });
 
-app.post("/api/upload", upload.single("file"), (req, res) => {
-  logger.info("Processing /api/upload request");
-
+app.post("/api/tender/file", upload.single("file"), (req, res) => {
   if (!req.file) {
     logger.warn("No file uploaded or file is not a PDF");
     return res.status(400).send("No file uploaded or file is not a PDF.");
@@ -64,10 +62,10 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
   res.status(200).send(`File uploaded successfully: ${req.file.path}`);
 });
 
-app.post("/api/question/add", (req: Request, res: Response) => {
+app.post("/api/tender/question/add", (req: Request, res: Response) => {
   const { question } = req.body;
 
-  logger.info("Processing /api/question/add request", { question });
+  logger.info("Processing /api/tender/question/add request", { question });
 
   if (typeof question !== "string") {
     logger.warn("Invalid question parameter", {

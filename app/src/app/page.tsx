@@ -11,9 +11,55 @@ export default function Home() {
   const [questions, setQuestions] = useState<Question[]>([]);
 
   console.log(API_URL);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.type !== "application/pdf") {
+        setUploadError("Only PDF files are allowed.");
+        setSelectedFile(null);
+        return;
+      }
+      setSelectedFile(file);
+      setUploadSuccess(false);
+      setUploadError(null);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+    setUploading(true);
+    setUploadError(null);
+    setUploadSuccess(false);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("mimetype", selectedFile.type);
+      const res = await fetch(`${API_URL}/tender/file`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        throw new Error("Upload failed");
+      }
+      setUploadSuccess(true);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setUploadError(err.message);
+      } else {
+        setUploadError("Unknown error");
+      }
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -21,6 +67,30 @@ export default function Home() {
       onSubmit={handleSubmit}
       className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded shadow flex flex-col gap-6"
     >
+      <div className="flex flex-col gap-2">
+        <label htmlFor="file-upload" className="font-medium">
+          Select file to upload:
+        </label>
+        <input
+          id="file-upload"
+          type="file"
+          accept="application/pdf"
+          onChange={handleFileChange}
+          className="border rounded px-2 py-1"
+        />
+        <button
+          type="button"
+          onClick={handleUpload}
+          disabled={!selectedFile || uploading}
+          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 self-start mt-2 disabled:opacity-50"
+        >
+          {uploading ? "Uploading..." : "Upload File"}
+        </button>
+        {uploadError && <div className="text-red-600">{uploadError}</div>}
+        {uploadSuccess && (
+          <div className="text-green-600">File uploaded successfully!</div>
+        )}
+      </div>
       <button
         type="submit"
         className="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 self-start"
