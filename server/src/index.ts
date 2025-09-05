@@ -42,7 +42,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (
+const fileFilter = async (
   _req: Request,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
@@ -52,19 +52,43 @@ const fileFilter = (
   } else {
     cb(null, false);
   }
+
+  const existingFile = database.findFileByOriginalName(file.filename);
+  if (existingFile) {
+    logger.info("File with the same name already exists", {
+      originalName: file.originalname,
+      existingPath: existingFile.path,
+    });
+
+    cb(null, false);
+  }
 };
 
 const upload = multer({ storage: storage, fileFilter: fileFilter });
 
-app.post("/api/tender/file", upload.single("file"), (req, res) => {
+// upload file
+app.post("/api/tender/file", upload.single("file"), async (req, res) => {
   if (!req.file) {
     logger.warn("No file uploaded or file is not a PDF");
     return res.status(400).send("No file uploaded or file is not a PDF.");
   }
 
-  return res.status(200).send(`File uploaded successfully: ${req.file.path}`);
+  try {
+    // Save file info to database
+    const fileId = await database.addFile(req.file.path, req.file.originalname);
+    return res.status(200).json({
+      success: true,
+      message: `File uploaded successfully`,
+      fileId,
+      path: req.file.path,
+    });
+  } catch (error) {
+    logger.error("Error saving file information to database", { error });
+    return res.status(500).json({ error: "Failed to process uploaded file" });
+  }
 });
 
+// add question
 app.post("/api/tender/question/add", async (req: Request, res: Response) => {
   const { question } = req.body;
 
@@ -101,6 +125,17 @@ app.get("/api/tender/questions", (_req: Request, res: Response) => {
   } catch (error) {
     logger.error("Failed to get questions", { error });
     res.status(500).json({ error: "Failed to get questions" });
+  }
+});
+
+// Get all files
+app.get("/api/tender/files", (_req: Request, res: Response) => {
+  try {
+    const files = database.getAllFiles();
+    res.status(200).json({ files });
+  } catch (error) {
+    logger.error("Failed to get files", { error });
+    res.status(500).json({ error: "Failed to get files" });
   }
 });
 
